@@ -1,4 +1,3 @@
-// src/booking/ConfirmBooking.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBooking } from "../context/BookingContext";
@@ -21,6 +20,11 @@ const correctEmail = (email: string): string => {
   }
   return email;
 };
+
+const realBarbers = [
+  { id: "421add1b-66d3-477d-8244-af3f4fe21f39", name: "Alket" },
+  { id: "dafdd2d8-a439-45d6-addb-7fb50ff24c5c", name: "Gino" },
+];
 
 const ConfirmBooking = () => {
   const { services, selectedBarber } = useBooking();
@@ -56,8 +60,17 @@ const ConfirmBooking = () => {
   useEffect(() => {
     const fetchSlots = async () => {
       if (!selectedDate || !selectedBarber?.id) return;
-      const slots = await getAvailableTimeSlots(selectedBarber.id, selectedDate);
-      setTimeslots(slots);
+
+      if (selectedBarber.name === "Qualsiasi Staff") {
+        const allSlots = await Promise.all(
+          realBarbers.map((barber) => getAvailableTimeSlots(barber.id, selectedDate))
+        );
+        const merged = [...new Set(allSlots.flat())].sort();
+        setTimeslots(merged);
+      } else {
+        const slots = await getAvailableTimeSlots(selectedBarber.id, selectedDate);
+        setTimeslots(slots);
+      }
     };
 
     fetchSlots();
@@ -65,26 +78,70 @@ const ConfirmBooking = () => {
 
   const handleSubmit = async () => {
     if (!isFormComplete || !selectedDate || !services.length || !selectedBarber) return;
-
     setIsSubmitting(true);
 
     try {
       const birthdateFormatted =
         birthdate.trim() !== "" ? new Date(birthdate.split("/").reverse().join("-")) : null;
 
-      const { error } = await supabase
-        .from("appointments")
-        .insert({
-          service_id: services[0].id,
-          barber_id: selectedBarber.id,
-          appointment_date: selectedDate.toLocaleDateString("en-CA"),
-          appointment_time: selectedTime,
-          duration_min: parseInt(services[0].duration.split(" ")[0], 10),
-          customer_name: fullName.trim(),
-          customer_email: correctEmail(email.trim()),
-          customer_phone: phone.trim(),
-          customer_birthdate: birthdateFormatted,
-        });
+      const formattedDate = selectedDate.toLocaleDateString("en-CA");
+      const duration = parseInt(services[0].duration.split(" ")[0], 10);
+
+      let finalBarberId = selectedBarber.id;
+
+      if (selectedBarber.name === "Qualsiasi Staff") {
+        const scored = await Promise.all(
+          realBarbers.map(async (barber) => {
+            const slots = await getAvailableTimeSlots(barber.id, selectedDate);
+            const hasSlot = slots.includes(selectedTime);
+
+            const { data: sameTime } = await supabase
+              .from("appointments")
+              .select("id")
+              .eq("barber_id", barber.id)
+              .eq("appointment_date", formattedDate)
+              .eq("appointment_time", selectedTime);
+
+            const { count } = await supabase
+              .from("appointments")
+              .select("*", { count: "exact", head: true })
+              .eq("barber_id", barber.id)
+              .eq("appointment_date", formattedDate);
+
+            return {
+              id: barber.id,
+              hasSlot,
+              isFree: !sameTime?.length,
+              appointments: count || 0,
+            };
+          })
+        );
+
+        const eligible = scored.filter((b) => b.hasSlot && b.isFree);
+        if (!eligible.length) {
+          alert("Nessun barbiere disponibile a quell'orario.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const minAppointments = Math.min(...eligible.map((b) => b.appointments));
+        const leastBusy = eligible.filter((b) => b.appointments === minAppointments);
+        const chosen = leastBusy[Math.floor(Math.random() * leastBusy.length)];
+
+        finalBarberId = chosen.id;
+      }
+
+      const { error } = await supabase.from("appointments").insert({
+        service_id: services[0].id,
+        barber_id: finalBarberId,
+        appointment_date: formattedDate,
+        appointment_time: selectedTime,
+        duration_min: duration,
+        customer_name: fullName.trim(),
+        customer_email: correctEmail(email.trim()),
+        customer_phone: phone.trim(),
+        customer_birthdate: birthdateFormatted,
+      });
 
       if (error) throw error;
 

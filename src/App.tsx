@@ -9,6 +9,7 @@ import SelectBarber from "./booking/SelectBarber";
 import ConfirmBooking from "./booking/ConfirmBooking";
 import BookingSuccess from "./booking/BookingSuccess";
 import { BookingProvider } from "./context/BookingContext";
+import SalonInfo from "./pages/SalonInfo"; // ✅ ADD THIS
 
 const App = () => {
   return (
@@ -23,6 +24,7 @@ const App = () => {
                   <Home />
                   <ServicesSection />
                   <Gallery />
+                  <SalonInfo /> {/* ✅ ADD THIS LINE */}
                   <Footer />
                 </>
               }

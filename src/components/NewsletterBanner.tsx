@@ -1,3 +1,4 @@
+// src/components/NewsletterBanner.tsx
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -108,7 +109,8 @@ const NewsletterBanner = () => {
         {/* X close button */}
         <button
           onClick={() => setVisible(false)}
-          className="absolute top-1 right-2 text-lg text-black hover:text-red-600 transition"
+          className="absolute top-2 right-3 text-sm text-black hover:text-red-600 transition p-1"
+          style={{ fontSize: "14px", lineHeight: "1" }}
           aria-label="Chiudi"
         >
           ×

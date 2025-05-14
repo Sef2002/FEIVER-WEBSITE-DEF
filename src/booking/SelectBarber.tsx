@@ -4,11 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Trash2 } from "lucide-react";
 import { useBooking, Barber } from "../context/BookingContext";
 
-const barbers: Barber[] = [
+const realBarbers: Barber[] = [
   { id: "421add1b-66d3-477d-8244-af3f4fe21f39", name: "Alket" },
   { id: "dafdd2d8-a439-45d6-addb-7fb50ff24c5c", name: "Gino" },
-  { id: "d84c3f47-9305-4909-a21f-ee599b830d51", name: "Qualsiasi Staff" },
 ];
+
+// Virtual entry, no ID needed in DB
+const qualsiasiStaff = { id: "virtual-qualsiasi", name: "Qualsiasi Staff" };
 
 const SelectBarber = () => {
   const { services, selectedBarber, setSelectedBarber } = useBooking();
@@ -64,7 +66,7 @@ const SelectBarber = () => {
         {/* Left: Barber Selection */}
         <div className="flex flex-col gap-4 w-1/2 justify-center">
           <div className="flex gap-4 w-full">
-            {barbers.slice(0, 2).map((barber) => (
+            {realBarbers.map((barber) => (
               <div
                 key={barber.id}
                 onClick={() => setSelectedBarber(barber)}
@@ -80,10 +82,11 @@ const SelectBarber = () => {
             ))}
           </div>
 
+          {/* Qualsiasi Staff (Virtual Option) */}
           <div
-            onClick={() => setSelectedBarber(barbers[2])}
+            onClick={() => setSelectedBarber(qualsiasiStaff)}
             className={`w-full h-12 rounded-xl bg-white shadow-md flex items-center justify-center cursor-pointer border transition ${
-              selectedBarber?.id === barbers[2].id ? "border-yellow-500" : "border-neutral-200 hover:shadow-lg"
+              selectedBarber?.name === "Qualsiasi Staff" ? "border-yellow-500" : "border-neutral-200 hover:shadow-lg"
             }`}
           >
             <span className="text-sm font-medium text-[#2D1B13]">Qualsiasi staff</span>
