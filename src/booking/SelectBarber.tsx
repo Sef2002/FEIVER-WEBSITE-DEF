@@ -1,145 +1,104 @@
-// src/booking/SelectBarber.tsx
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Trash2 } from "lucide-react";
-import { useBooking, Barber } from "../context/BookingContext";
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { User } from 'lucide-react';
+import { supabase } from '@/lib/supabase'; // Assicurati che questo path sia corretto
 
-const realBarbers: Barber[] = [
-  { id: "421add1b-66d3-477d-8244-af3f4fe21f39", name: "Alket" },
-  { id: "dafdd2d8-a439-45d6-addb-7fb50ff24c5c", name: "Gino" },
-];
-
-// Virtual entry, no ID needed in DB
-const qualsiasiStaff = { id: "virtual-qualsiasi", name: "Qualsiasi Staff" };
-
-const SelectBarber = () => {
-  const { services, selectedBarber, setSelectedBarber } = useBooking();
+const SelectBarber: React.FC = () => {
   const navigate = useNavigate();
-  const brown = "#3B2C20";
+  const location = useLocation();
+  const [selectedBarber, setSelectedBarber] = useState<string>('');
+  const [barbers, setBarbers] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchBarbers = async () => {
+      const { data, error } = await supabase.from('barbers').select('*');
+      if (!error && data) {
+        // Mock fields if needed for display
+        const enriched = data.map((barber) => ({
+          id: barber.id,
+          name: barber.name,
+          role: 'Stylist', // You can add this in DB later
+          experience: 'Esperto/a in stile', // Default placeholder
+          specialties: ['Taglio', 'Colore'] // Optional default
+        }));
+        setBarbers(enriched);
+      }
+    };
+    fetchBarbers();
+  }, []);
 
   const handleContinue = () => {
     if (selectedBarber) {
-      navigate("/conferma");
+      navigate('/prenota/conferma', {
+        state: {
+          ...location.state,
+          barberId: selectedBarber
+        }
+      });
     }
   };
 
   return (
-    <div className="w-screen h-screen bg-[#f6f0e6] flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex justify-between items-center px-12 py-4 w-full">
-        <div className="flex items-center space-x-4">
-          <img src="/assets/Feiver logo.png" alt="Logo" className="w-20 h-20 object-contain" />
-          <div className="text-left leading-tight">
-            <div className="flex items-center">
-              <span className="text-lg font-bold">BARBIERE</span>
-              <div className="h-8 w-1 mx-2 bg-yellow-500" />
-            </div>
-            <p className="text-xs mt-1">UOMO & DONNA</p>
-          </div>
-        </div>
-
-        {/* Progress */}
-        <div className="flex flex-col items-center space-y-2">
-          <div className="flex items-center space-x-4">
-            <div className="flex flex-col items-center">
-              <div className="w-5 h-5 rounded-full" style={{ backgroundColor: brown }} />
-              <span className="text-xs mt-1" style={{ color: brown }}>Servizio</span>
-            </div>
-            <div className="w-12 h-0.5 bg-neutral-400" />
-            <div className="flex flex-col items-center">
-              <div className="w-5 h-5 rounded-full" style={{ backgroundColor: brown }} />
-              <span className="text-xs mt-1" style={{ color: brown }}>Staff</span>
-            </div>
-            <div className="w-12 h-0.5 bg-neutral-400" />
-            <div className="flex flex-col items-center">
-              <div className="w-3 h-3 rounded-full border-2" style={{ borderColor: brown }} />
-              <span className="text-xs mt-1" style={{ color: brown }}>Conferma</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-20 h-20" />
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 px-12 gap-10 w-full overflow-hidden">
-        {/* Left: Barber Selection */}
-        <div className="flex flex-col gap-4 w-1/2 justify-center">
-          <div className="flex gap-4 w-full">
-            {realBarbers.map((barber) => (
-              <div
-                key={barber.id}
-                onClick={() => setSelectedBarber(barber)}
-                className={`flex-1 aspect-square rounded-xl bg-white shadow-md flex flex-col justify-center items-center cursor-pointer border transition ${
-                  selectedBarber?.id === barber.id ? "border-yellow-500" : "border-neutral-200 hover:shadow-lg"
-                }`}
-              >
-                <div className="w-16 h-16 bg-neutral-200 rounded-md flex items-center justify-center text-xs text-neutral-400 mb-2">
-                  IMG
-                </div>
-                <span className="text-sm font-medium text-[#2D1B13]">{barber.name}</span>
-              </div>
-            ))}
+    <main className="pt-24">
+      <section className="py-16 bg-zinc-900">
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="text-center mb-10">
+            <h5 className="text-gold tracking-widest uppercase mb-2">Prenota</h5>
+            <h1 className="text-4xl sm:text-5xl font-heading font-bold mb-6">Scegli il Professionista</h1>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              Seleziona il professionista che si prenderà cura di te
+            </p>
           </div>
 
-          {/* Qualsiasi Staff (Virtual Option) */}
-          <div
-            onClick={() => setSelectedBarber(qualsiasiStaff)}
-            className={`w-full h-12 rounded-xl bg-white shadow-md flex items-center justify-center cursor-pointer border transition ${
-              selectedBarber?.name === "Qualsiasi Staff" ? "border-yellow-500" : "border-neutral-200 hover:shadow-lg"
-            }`}
-          >
-            <span className="text-sm font-medium text-[#2D1B13]">Qualsiasi staff</span>
-          </div>
-        </div>
-
-        {/* Right: Appointment Summary */}
-        <div className="flex flex-col items-center justify-center w-1/2">
-          <div
-            className="w-80 rounded-xl px-6 py-4 bg-neutral-200 text-sm transition-all"
-            style={{
-              minHeight: services.length === 0 ? "120px" : "auto",
-            }}
-          >
-            <p className="font-semibold mb-3">Riepilogo appuntamento</p>
-            {services.length === 0 ? (
-              <div className="text-neutral-500 text-sm text-center py-6">
-                Nessun servizio aggiunto
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {services.map((service, index) => (
-                  <div
-                    key={index}
-                    className="bg-white px-4 py-2 rounded-md flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-[#2D1B13]">{service.name}</p>
-                      <p className="text-xs text-neutral-500">
-                        {service.price} · {service.duration}
-                      </p>
+          <div className="max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {barbers.map((barber) => (
+                <div
+                  key={barber.id}
+                  className={`p-6 border ${
+                    selectedBarber === barber.id
+                      ? 'border-gold bg-gold bg-opacity-10'
+                      : 'border-gray-800 hover:border-gold'
+                  } rounded-lg cursor-pointer transition-all`}
+                  onClick={() => setSelectedBarber(barber.id)}
+                >
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-gray-800 rounded-full mx-auto mb-4 flex items-center justify-center">
+                      <User className="w-10 h-10 text-gold" />
                     </div>
-                    <Trash2 className="w-4 h-4 text-neutral-300" />
+                    <h3 className="text-xl font-heading mb-2">{barber.name}</h3>
+                    <p className="text-gold mb-2">{barber.role}</p>
+                    <p className="text-sm text-gray-400 mb-4">{barber.experience}</p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {barber.specialties.map((specialty, index) => (
+                        <span
+                          key={index}
+                          className="text-xs bg-black bg-opacity-50 text-gold px-3 py-1 rounded-full"
+                        >
+                          {specialty}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
 
-          <button
-            disabled={!selectedBarber}
-            onClick={handleContinue}
-            className={`mt-4 w-80 py-3 rounded-md text-white text-sm font-semibold transition ${
-              !selectedBarber
-                ? "bg-[#3B2C20]/40 cursor-not-allowed"
-                : "bg-[#3B2C20] hover:bg-[#2A1F18]"
-            }`}
-          >
-            CONTINUA
-          </button>
+            <div className="mt-10 text-center">
+              <button
+                onClick={handleContinue}
+                disabled={!selectedBarber}
+                className={`btn ${
+                  selectedBarber ? 'btn-primary' : 'bg-gray-700 cursor-not-allowed'
+                } text-lg px-8 py-3`}
+              >
+                Continua
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 
